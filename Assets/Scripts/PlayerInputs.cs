@@ -136,14 +136,12 @@ class PlayerInputs : MonoBehaviour
     public InGameActions inGameActions;
     public UIActions uiActions;
 
-    InputRepeatHandler inGameMoveRepeat;
     InputRepeatHandler uiNavigateRepeat;
 
-    private bool isUpdatingMove = false;
     private bool isAttackActive = false;
     private bool isInteractActive = false;
     private bool enableUiInputNextFrame = false;
-    private float moveDeadzone = 0.2f;
+    // private float moveDeadzone = 0.2f;
 
     void Awake()
     {
@@ -163,7 +161,6 @@ class PlayerInputs : MonoBehaviour
         inGameActions = new InGameActions();
         uiActions = new UIActions();
 
-        inGameMoveRepeat = new InputRepeatHandler(this, 0.2f);
         uiNavigateRepeat = new InputRepeatHandler(this, 0.4f);
         //customControls.Enable();
         defaultInputs.Enable();
@@ -187,10 +184,8 @@ class PlayerInputs : MonoBehaviour
         defaultInputs.Player.Interact.canceled += ctx => isInteractActive = false;
         defaultInputs.Player.Sprint.started += ctx => inGameActions.OnRunPressed();
         defaultInputs.Player.Sprint.canceled += ctx => inGameActions.OnRunReleased();
-        defaultInputs.Player.Move.performed += ctx => HandleMoveValueChanged();
-        defaultInputs.Player.Move.canceled += ctx => inGameMoveRepeat.Stop();
-
-        inGameMoveRepeat.Repeat += TriggerMoveAction;
+        defaultInputs.Player.Move.performed += ctx => TriggerMoveAction();
+        defaultInputs.Player.Move.canceled += ctx => TriggerMoveAction();
 
         defaultInputs.UI.Submit.started += ctx => uiActions.OnApprove();
         defaultInputs.UI.Cancel.started += ctx => uiActions.OnCancel();
@@ -200,11 +195,6 @@ class PlayerInputs : MonoBehaviour
 
         RegisterMouseClickHandler();
     }
-
-    // public CustomControls GetCustomControls()
-    // {
-    //     return customControls;
-    // }
 
     public InputSystem_Actions GetDefaultInputs()
     {
@@ -218,53 +208,11 @@ class PlayerInputs : MonoBehaviour
         action?.Invoke();
     }
 
-    private void HandleMoveValueChanged()
-    {
-        if (isUpdatingMove) return;
-
-        isUpdatingMove = true;
-        // float moveValue = customControls.Player.Move.IsPressed()
-        //     ? customControls.Player.Move.ReadValue<float>()
-        //     : defaultInputs.Player.Move.ReadValue<float>();
-
-        Vector2 moveValue = defaultInputs.Player.Move.ReadValue<Vector2>();
-
-        if (moveValue.magnitude >= moveDeadzone)
-        {
-            if (!inGameMoveRepeat.IsRunning())
-            {
-                inGameMoveRepeat.Start();
-            }
-            if (!uiNavigateRepeat.IsRunning())
-            {
-                uiNavigateRepeat.Start();
-            }
-        }
-        else
-        {
-            if (inGameMoveRepeat.IsRunning())
-            {
-                inGameMoveRepeat.Stop();
-            }
-            if (uiNavigateRepeat.IsRunning())
-            {
-                uiNavigateRepeat.Stop();
-            }
-        }
-        isUpdatingMove = false;
-    }
 
     private void TriggerMoveAction()
     {
-        // float moveValue = customControls.Player.Move.IsPressed()
-        //     ? customControls.Player.Move.ReadValue<float>()
-        //     : defaultInputs.Player.Move.ReadValue<float>();
         Vector2 moveValue = defaultInputs.Player.Move.ReadValue<Vector2>();
-
-        if (moveValue.magnitude >= moveDeadzone)
-        {
-            inGameActions.OnMove(moveValue);
-        }
+        inGameActions.OnMove(moveValue);
     }
 
     private void TriggerNav()

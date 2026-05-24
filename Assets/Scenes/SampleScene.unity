@@ -657,6 +657,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerControler
   walkSpeed: 5
   runSpeed: 8
+  accelerationRate: 50
+  decelerationRate: 30
+  jumpPower: 6
+  jumpingMore: 3.5
+  maxJumpTime: 1
 --- !u!61 &2028799818
 BoxCollider2D:
   m_ObjectHideFlags: 0
