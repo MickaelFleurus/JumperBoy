@@ -12,6 +12,7 @@ public struct InteractionInitiator
 public struct InteractionResult
 {
     public bool stopMovement;
+    public float yPosition;
 }
 
 public class Ground : MonoBehaviour
@@ -37,6 +38,7 @@ public class Ground : MonoBehaviour
         this.strength -= strength;
         if (this.strength <= 0)
         {
+            Debug.Log("DESTROY!");
             Destroy(gameObject);
         }
     }

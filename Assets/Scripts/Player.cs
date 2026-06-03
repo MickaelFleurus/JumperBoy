@@ -1,4 +1,5 @@
 using System;
+using NUnit.Framework;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -9,9 +10,6 @@ public class Player : MonoBehaviour
     [SerializeField] private float runSpeed = 8f;
     [SerializeField] private float accelerationRate = 50f;
     [SerializeField] private float decelerationRate = 30f;
-    [SerializeField] private float jumpPower = 0.5f;
-    [SerializeField] private float jumpingMore = 4f;
-    [SerializeField] private float maxJumpTime = 1f;
     private float timeSinceJumpStart = 0f;
 
     private Rigidbody2D rb;
@@ -24,13 +22,16 @@ public class Player : MonoBehaviour
     private float groundCheckDistance = 0.2f;
     private float lateralCheckDistance = 0.25f;
 
-    private PlayerState currentState = PlayerState.Idle;
-    private bool isJumping = false;
+
+    private JumpHandler jumpHandler;
+    private SpriteRenderer spriteRenderer;
 
     private RaycastHit2D[] hitResults = new RaycastHit2D[3];
 
     void Start()
     {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        jumpHandler = ScriptableObject.CreateInstance<JumpHandler>();
         groundLayer = LayerMask.GetMask("Ground");
         rb = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
@@ -38,51 +39,63 @@ public class Player : MonoBehaviour
         rb.gravityScale = 0; // Turn off automatic gravity
         PlayerInputs.Instance.inGameActions.Enable();
         PlayerInputs.Instance.inGameActions.Move += OnMove;
-        PlayerInputs.Instance.inGameActions.JumpPressed += OnJumpStart;
-        PlayerInputs.Instance.inGameActions.JumpRelease += OnJumpStop;
+        PlayerInputs.Instance.inGameActions.JumpPressed += OnJumpPressed;
+        PlayerInputs.Instance.inGameActions.JumpRelease += OnJumpReleased;
 
+    }
+
+    void Update()
+    {
+        jumpHandler.Updated(Time.deltaTime);
     }
 
 
     void FixedUpdate()
     {
-        isGrounded = CheckVecticalCollision();
-        if (isGrounded && !isJumping)
+        if (velocity.y <= 0f)
         {
-            currentState = PlayerState.Idle;
-            velocity.y = 0.0f;
-        }
-        else
-        {
-            float jumpingAttenuation = 0f;
-            if (isJumping)
+            bool isNowGrounded = HandleGroundCollision();
+
+            if (!isGrounded && isNowGrounded)
             {
-                bool hitCeiling = CheckVecticalCollision();
-                if (!hitCeiling)
+                velocity.y = 0.0f;
+                jumpHandler.OnJumpReset();
+            }
+            else if (!isNowGrounded)
+            {
+                velocity.y -= Math.Max(gravityScale * Time.deltaTime, -10f);
+            }
+            isGrounded = isNowGrounded;
+        }
+        else  // velocity.y > 0f
+        {
+            if (CheckVecticalCollision()) // Stop ascending
+            {
+                jumpHandler.OnJumpingStop();
+                velocity.y = 0f;
+            }
+            else
+            {
+                float jumpingAttenuation = 0f;
+                if (jumpHandler.IsJumping)
                 {
                     timeSinceJumpStart += Time.deltaTime;
-                    if (timeSinceJumpStart < maxJumpTime)
+                    if (timeSinceJumpStart < jumpHandler.MaxJumpTime)
                     {
-                        jumpingAttenuation = jumpingMore;
+                        jumpingAttenuation = jumpHandler.JumpingMore;
                     }
                     else
                     {
-                        isJumping = false;
+                        jumpHandler.OnJumpingStop();
                     }
                 }
-                else
-                {
-                    isJumping = false;
-                    velocity.y = 0f;
-                }
-
+                velocity.y -= Math.Max((gravityScale - jumpingAttenuation) * Time.deltaTime, -10f);
             }
-            velocity.y -= Math.Max((gravityScale - jumpingAttenuation) * Time.deltaTime, -10f);
         }
 
         if (Mathf.Abs(currentDirection.x) > 0.1f)
         {
-            float targetSpeed = currentDirection.x * (currentState == PlayerState.Run ? runSpeed : walkSpeed);
+            float targetSpeed = currentDirection.x * (true ? runSpeed : walkSpeed);
 
             if ((currentDirection.x > 0 && !CheckLateralCollision(Vector2.right)) || (currentDirection.x < 0 && !CheckLateralCollision(Vector2.left)))
             {
@@ -107,19 +120,18 @@ public class Player : MonoBehaviour
         currentDirection = direction;
     }
 
-    private void OnJumpStart()
+    private void OnJumpPressed()
     {
-        if (!isGrounded) return;
+        if (!jumpHandler.TryJump()) return;
 
-        isJumping = true;
-        currentState = PlayerState.Rising;
-        velocity.y = jumpPower;
+
+        velocity.y = jumpHandler.JumpPower;
         timeSinceJumpStart = 0.0f;
     }
 
-    private void OnJumpStop()
+    private void OnJumpReleased()
     {
-        isJumping = false;
+        jumpHandler.OnJumpingStop();
     }
 
     private bool CheckLateralCollision(Vector2 direction)
@@ -152,25 +164,29 @@ public class Player : MonoBehaviour
 
             for (int i = 0; i < hits; ++i)
             {
+                if (hitResults[i].distance < 0f) continue;
                 var ground = hitResults[i].transform.gameObject.GetComponent<Ground>();
-
-                if (hitResults[i].distance > 0)
+                var result = ground.OnInteraction(interaction);
+                if (result.stopMovement)
                 {
-                    var result = ground.OnInteraction(interaction);
-                    if (result.stopMovement)
-                        return true;
+                    float skinSize = direction.x > 0 ? -spriteRenderer.bounds.extents.x : spriteRenderer.bounds.extents.x;
+                    transform.position = new Vector3(
+                        hitResults[i].point.x + skinSize,
+                        transform.position.y,
+                        transform.position.z);
+                    return true;
                 }
             }
-
         }
 
         return false;
     }
 
-    private bool CheckVecticalCollision()
+    private bool HandleGroundCollision()
     {
-        bool fromBelow = velocity.y > 0;
-        float yOrigin = fromBelow ? playerCollider.bounds.max.y : playerCollider.bounds.min.y;
+        if (velocity.y > 0f)
+            return false;
+        float yOrigin = playerCollider.bounds.min.y;
         Span<Vector2> origins = stackalloc Vector2[3]{new Vector2(
             playerCollider.bounds.min.x, yOrigin
         ), new Vector2(
@@ -180,7 +196,7 @@ public class Player : MonoBehaviour
         )};
 
         var interaction = new InteractionInitiator();
-        interaction.angle = fromBelow ? InteractionInitiator.EInteractionAngle.FromBeneath : InteractionInitiator.EInteractionAngle.FromAbove;
+        interaction.angle = InteractionInitiator.EInteractionAngle.FromAbove;
         interaction.go = this.gameObject;
         interaction.hitStrenght = 1;
 
@@ -199,7 +215,53 @@ public class Player : MonoBehaviour
                 var ground = hitResults[i].transform.gameObject.GetComponent<Ground>();
                 var result = ground.OnInteraction(interaction);
                 if (result.stopMovement)
+                {
+                    transform.position = new Vector3(
+                        transform.position.x,
+                        hitResults[i].point.y + spriteRenderer.bounds.extents.y,
+                        transform.position.z);
                     return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool CheckVecticalCollision()
+    {
+        float yOrigin = playerCollider.bounds.max.y;
+        Span<Vector2> origins = stackalloc Vector2[3]{new Vector2(
+            playerCollider.bounds.min.x, yOrigin
+        ), new Vector2(
+            playerCollider.bounds.center.x, yOrigin
+        ), new Vector2(
+            playerCollider.bounds.max.x , yOrigin
+        )};
+
+        var interaction = new InteractionInitiator();
+        interaction.angle = InteractionInitiator.EInteractionAngle.FromBeneath;
+        interaction.go = this.gameObject;
+        interaction.hitStrenght = 1;
+
+        foreach (var origin in origins)
+        {
+            int hits = Physics2D.RaycastNonAlloc(
+                    origin,
+                    Vector2.down, hitResults,
+                    groundCheckDistance,
+                    groundLayer);
+
+
+            for (int i = 0; i < hits; ++i)
+            {
+                if (hitResults[i].distance < 0f) continue;
+                var ground = hitResults[i].transform.gameObject.GetComponent<Ground>();
+                var result = ground.OnInteraction(interaction);
+                if (result.stopMovement)
+                {
+                    return true;
+                }
             }
         }
 
