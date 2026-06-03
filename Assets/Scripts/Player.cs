@@ -22,9 +22,9 @@ public class Player : MonoBehaviour
     private float groundCheckDistance = 0.2f;
     private float lateralCheckDistance = 0.25f;
 
-
     private JumpHandler jumpHandler;
     private SpriteRenderer spriteRenderer;
+    private bool ignoreNextWalkThroughCollision = false;
 
     private RaycastHit2D[] hitResults = new RaycastHit2D[3];
 
@@ -59,6 +59,7 @@ public class Player : MonoBehaviour
             if (!isGrounded && isNowGrounded)
             {
                 velocity.y = 0.0f;
+                ignoreNextWalkThroughCollision = false;
                 jumpHandler.OnJumpReset();
             }
             else if (!isNowGrounded)
@@ -111,7 +112,6 @@ public class Player : MonoBehaviour
             velocity.x = Mathf.MoveTowards(velocity.x, 0, decelerationRate * Time.deltaTime);
         }
 
-        Debug.Log(velocity);
         rb.linearVelocity = velocity;
     }
 
@@ -122,11 +122,18 @@ public class Player : MonoBehaviour
 
     private void OnJumpPressed()
     {
-        if (!jumpHandler.TryJump()) return;
+        if (isGrounded && currentDirection.y < -0.5f)
+        {
+            ignoreNextWalkThroughCollision = true;
+        }
+        else
+        {
+            ignoreNextWalkThroughCollision = false;
+            if (!jumpHandler.TryJump()) return;
 
-
-        velocity.y = jumpHandler.JumpPower;
-        timeSinceJumpStart = 0.0f;
+            velocity.y = jumpHandler.JumpPower;
+            timeSinceJumpStart = 0.0f;
+        }
     }
 
     private void OnJumpReleased()
@@ -199,6 +206,8 @@ public class Player : MonoBehaviour
         interaction.angle = InteractionInitiator.EInteractionAngle.FromAbove;
         interaction.go = this.gameObject;
         interaction.hitStrenght = 1;
+        interaction.ignoreWalkThroughCollision = ignoreNextWalkThroughCollision;
+
 
         foreach (var origin in origins)
         {

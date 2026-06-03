@@ -3,6 +3,7 @@ using UnityEngine;
 public struct InteractionInitiator
 {
     public enum EInteractionAngle { FromBeneath, FromAbove, Sideway };
+    public bool ignoreWalkThroughCollision;
     public EInteractionAngle angle;
     public int hitStrenght;
     public GameObject go;
@@ -13,6 +14,8 @@ public struct InteractionResult
 {
     public bool stopMovement;
     public float yPosition;
+    public Ground.EGroundType groundType;
+
 }
 
 public class Ground : MonoBehaviour
@@ -38,7 +41,6 @@ public class Ground : MonoBehaviour
         this.strength -= strength;
         if (this.strength <= 0)
         {
-            Debug.Log("DESTROY!");
             Destroy(gameObject);
         }
     }
@@ -50,7 +52,14 @@ public class Ground : MonoBehaviour
         {
             if (other.angle == InteractionInitiator.EInteractionAngle.FromAbove)
             {
-                result.stopMovement = true;
+                if (other.ignoreWalkThroughCollision && groundType == EGroundType.WalkThrough)
+                {
+                    result.stopMovement = false;
+                }
+                else
+                {
+                    result.stopMovement = true;
+                }
             }
             else if (other.angle == InteractionInitiator.EInteractionAngle.Sideway)
             {
