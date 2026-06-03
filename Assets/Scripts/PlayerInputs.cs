@@ -9,6 +9,7 @@ class InGameActions
     public Action<Vector2> Move;
     public Action JumpPressed;
     public Action JumpRelease;
+    public Action Dash;
     public Action Attack;
     public Action Interact;
     public Action RunPressed;
@@ -77,6 +78,12 @@ class InGameActions
     {
         if (!enabled) return;
         Pause?.Invoke();
+    }
+
+    public void OnDash()
+    {
+        if (!enabled) return;
+        Dash?.Invoke();
     }
 }
 
@@ -186,6 +193,7 @@ class PlayerInputs : MonoBehaviour
         defaultInputs.Player.Sprint.canceled += ctx => inGameActions.OnRunReleased();
         defaultInputs.Player.Move.performed += ctx => TriggerMoveAction();
         defaultInputs.Player.Move.canceled += ctx => TriggerMoveAction();
+        defaultInputs.Player.Dash.started += ctx => inGameActions.Dash();
 
         defaultInputs.UI.Submit.started += ctx => uiActions.OnApprove();
         defaultInputs.UI.Cancel.started += ctx => uiActions.OnCancel();

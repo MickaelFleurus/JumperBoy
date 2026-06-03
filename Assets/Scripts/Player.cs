@@ -23,6 +23,7 @@ public class Player : MonoBehaviour
     private float lateralCheckDistance = 0.25f;
 
     private JumpHandler jumpHandler;
+    private DashHandler dashHandler;
     private SpriteRenderer spriteRenderer;
     private bool ignoreNextWalkThroughCollision = false;
 
@@ -31,86 +32,106 @@ public class Player : MonoBehaviour
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+
         jumpHandler = ScriptableObject.CreateInstance<JumpHandler>();
+        dashHandler = ScriptableObject.CreateInstance<DashHandler>();
+
         groundLayer = LayerMask.GetMask("Ground");
         rb = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
         rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.gravityScale = 0; // Turn off automatic gravity
+        rb.gravityScale = 0;
+
         PlayerInputs.Instance.inGameActions.Enable();
         PlayerInputs.Instance.inGameActions.Move += OnMove;
         PlayerInputs.Instance.inGameActions.JumpPressed += OnJumpPressed;
         PlayerInputs.Instance.inGameActions.JumpRelease += OnJumpReleased;
+        PlayerInputs.Instance.inGameActions.Dash += OnDash;
 
     }
 
     void Update()
     {
         jumpHandler.Updated(Time.deltaTime);
+        dashHandler.Updated(Time.deltaTime);
     }
 
 
     void FixedUpdate()
     {
-        if (velocity.y <= 0f)
+        if (!dashHandler.IsDashing)
         {
-            bool isNowGrounded = HandleGroundCollision();
+            if (velocity.y <= 0f)
+            {
+                bool isNowGrounded = HandleGroundCollision();
 
-            if (!isGrounded && isNowGrounded)
-            {
-                velocity.y = 0.0f;
-                ignoreNextWalkThroughCollision = false;
-                jumpHandler.OnJumpReset();
-            }
-            else if (!isNowGrounded)
-            {
-                velocity.y -= Math.Max(gravityScale * Time.deltaTime, -10f);
-            }
-            isGrounded = isNowGrounded;
-        }
-        else  // velocity.y > 0f
-        {
-            if (CheckVecticalCollision()) // Stop ascending
-            {
-                jumpHandler.OnJumpingStop();
-                velocity.y = 0f;
-            }
-            else
-            {
-                float jumpingAttenuation = 0f;
-                if (jumpHandler.IsJumping)
+                if (!isGrounded && isNowGrounded)
                 {
-                    timeSinceJumpStart += Time.deltaTime;
-                    if (timeSinceJumpStart < jumpHandler.MaxJumpTime)
-                    {
-                        jumpingAttenuation = jumpHandler.JumpingMore;
-                    }
-                    else
-                    {
-                        jumpHandler.OnJumpingStop();
-                    }
+                    velocity.y = 0.0f;
+                    ignoreNextWalkThroughCollision = false;
+                    jumpHandler.OnJumpReset();
+                    dashHandler.OnDashReset();
                 }
-                velocity.y -= Math.Max((gravityScale - jumpingAttenuation) * Time.deltaTime, -10f);
+                else if (!isNowGrounded)
+                {
+                    velocity.y -= Math.Max(gravityScale * Time.deltaTime, -10f);
+                }
+                isGrounded = isNowGrounded;
+            }
+            else  // velocity.y > 0f
+            {
+                if (CheckVecticalCollision()) // Stop ascending
+                {
+                    jumpHandler.OnJumpingStop();
+                    velocity.y = 0f;
+                }
+                else
+                {
+                    float jumpingAttenuation = 0f;
+                    if (jumpHandler.IsJumping)
+                    {
+                        timeSinceJumpStart += Time.deltaTime;
+                        if (timeSinceJumpStart < jumpHandler.MaxJumpTime)
+                        {
+                            jumpingAttenuation = jumpHandler.JumpingMore;
+                        }
+                        else
+                        {
+                            jumpHandler.OnJumpingStop();
+                        }
+                    }
+                    velocity.y -= Math.Max((gravityScale - jumpingAttenuation) * Time.deltaTime, -10f);
+                }
             }
         }
-
-        if (Mathf.Abs(currentDirection.x) > 0.1f)
+        if (!dashHandler.IsDashing)
         {
-            float targetSpeed = currentDirection.x * (true ? runSpeed : walkSpeed);
-
-            if ((currentDirection.x > 0 && !CheckLateralCollision(Vector2.right)) || (currentDirection.x < 0 && !CheckLateralCollision(Vector2.left)))
+            if (Mathf.Abs(currentDirection.x) > 0.1f)
             {
-                velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accelerationRate * Time.deltaTime);
+                float targetSpeed = currentDirection.x * (true ? runSpeed : walkSpeed);
+
+                if ((currentDirection.x > 0 && !CheckLateralCollision(Vector2.right)) || (currentDirection.x < 0 && !CheckLateralCollision(Vector2.left)))
+                {
+                    velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accelerationRate * Time.deltaTime);
+                }
+                else
+                {
+                    velocity.x = 0; // Stop if hitting a wall
+                }
             }
             else
             {
-                velocity.x = 0; // Stop if hitting a wall
+                velocity.x = Mathf.MoveTowards(velocity.x, 0, decelerationRate * Time.deltaTime);
             }
         }
         else
         {
-            velocity.x = Mathf.MoveTowards(velocity.x, 0, decelerationRate * Time.deltaTime);
+            if ((currentDirection.x > 0 && CheckLateralCollision(Vector2.right)) || (currentDirection.x < 0 && CheckLateralCollision(Vector2.left)))
+            {
+                velocity.x = 0f;
+            }
         }
+
 
         rb.linearVelocity = velocity;
     }
@@ -139,6 +160,16 @@ public class Player : MonoBehaviour
     private void OnJumpReleased()
     {
         jumpHandler.OnJumpingStop();
+    }
+
+    private void OnDash()
+    {
+        if (Math.Abs(currentDirection.x) > 0.1f && dashHandler.TryDash())
+        {
+            velocity.x = currentDirection.x > 0f ? dashHandler.DashPower : -dashHandler.DashPower;
+            velocity.y = 0f;
+            isGrounded = false;
+        }
     }
 
     private bool CheckLateralCollision(Vector2 direction)
