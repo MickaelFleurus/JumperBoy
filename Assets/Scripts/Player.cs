@@ -10,7 +10,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float runSpeed = 8f;
     [SerializeField] private float accelerationRate = 50f;
     [SerializeField] private float decelerationRate = 30f;
-    private float timeSinceJumpStart = 0f;
+
 
     private Rigidbody2D rb;
     private Collider2D playerCollider;
@@ -24,6 +24,7 @@ public class Player : MonoBehaviour
 
     private JumpHandler jumpHandler;
     private DashHandler dashHandler;
+    private WallJumpHandler wallJumpHandler;
     private SpriteRenderer spriteRenderer;
     private bool ignoreNextWalkThroughCollision = false;
 
@@ -35,6 +36,7 @@ public class Player : MonoBehaviour
 
         jumpHandler = ScriptableObject.CreateInstance<JumpHandler>();
         dashHandler = ScriptableObject.CreateInstance<DashHandler>();
+        wallJumpHandler = ScriptableObject.CreateInstance<WallJumpHandler>();
 
         groundLayer = LayerMask.GetMask("Ground");
         rb = GetComponent<Rigidbody2D>();
@@ -53,11 +55,18 @@ public class Player : MonoBehaviour
     void Update()
     {
         jumpHandler.Updated(Time.deltaTime);
+        wallJumpHandler.Updated(Time.deltaTime);
         dashHandler.Updated(Time.deltaTime);
     }
 
-
     void FixedUpdate()
+    {
+        UpdateHorizontalVelocity();
+        UpdateVerticalVelocity();
+        rb.linearVelocity = velocity;
+    }
+
+    private void UpdateVerticalVelocity()
     {
         if (!dashHandler.IsDashing)
         {
@@ -82,41 +91,41 @@ public class Player : MonoBehaviour
             {
                 if (CheckVecticalCollision()) // Stop ascending
                 {
-                    jumpHandler.OnJumpingStop();
+                    jumpHandler.OnJumpStop();
+                    wallJumpHandler.OnJumpStop();
                     velocity.y = 0f;
                 }
                 else
                 {
-                    float jumpingAttenuation = 0f;
-                    if (jumpHandler.IsJumping)
-                    {
-                        timeSinceJumpStart += Time.deltaTime;
-                        if (timeSinceJumpStart < jumpHandler.MaxJumpTime)
-                        {
-                            jumpingAttenuation = jumpHandler.JumpingMore;
-                        }
-                        else
-                        {
-                            jumpHandler.OnJumpingStop();
-                        }
-                    }
+                    float jumpingAttenuation = jumpHandler.IsJumping
+                        ? jumpHandler.JumpPower
+                        : wallJumpHandler.IsWallJumping
+                            ? wallJumpHandler.JumpPower.y
+                            : 0f;
                     velocity.y -= Math.Max((gravityScale - jumpingAttenuation) * Time.deltaTime, -10f);
                 }
             }
         }
-        if (!dashHandler.IsDashing)
+    }
+
+    private void UpdateHorizontalVelocity()
+    {
+        wallJumpHandler.canWallJump = false;
+        if (!dashHandler.IsDashing && !wallJumpHandler.IsWallJumping)
         {
             if (Mathf.Abs(currentDirection.x) > 0.1f)
             {
                 float targetSpeed = currentDirection.x * (true ? runSpeed : walkSpeed);
 
-                if ((currentDirection.x > 0 && !CheckLateralCollision(Vector2.right)) || (currentDirection.x < 0 && !CheckLateralCollision(Vector2.left)))
+                bool hasCollision = currentDirection.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
+                if (!hasCollision)
                 {
                     velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accelerationRate * Time.deltaTime);
                 }
                 else
                 {
                     velocity.x = 0; // Stop if hitting a wall
+                    wallJumpHandler.canWallJump = true;
                 }
             }
             else
@@ -124,16 +133,32 @@ public class Player : MonoBehaviour
                 velocity.x = Mathf.MoveTowards(velocity.x, 0, decelerationRate * Time.deltaTime);
             }
         }
-        else
+        else if (wallJumpHandler.IsWallJumping)
         {
-            if ((currentDirection.x > 0 && CheckLateralCollision(Vector2.right)) || (currentDirection.x < 0 && CheckLateralCollision(Vector2.left)))
+            bool hasCollision = velocity.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
+            if (hasCollision)
+            {
+                velocity.x = 0f;
+                wallJumpHandler.OnJumpStop();
+            }
+            else
+            {
+                float targetSpeed = velocity.x * (true ? runSpeed : walkSpeed);
+                velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, decelerationRate * Time.deltaTime);
+            }
+        }
+        else if (dashHandler.IsDashing)
+        {
+            bool hasCollision = currentDirection.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
+            if (hasCollision)
             {
                 velocity.x = 0f;
             }
+            else
+            {
+                velocity.x = dashHandler.DashPower;
+            }
         }
-
-
-        rb.linearVelocity = velocity;
     }
 
     private void OnMove(Vector2 direction)
@@ -150,16 +175,28 @@ public class Player : MonoBehaviour
         else
         {
             ignoreNextWalkThroughCollision = false;
-            if (!jumpHandler.TryJump()) return;
+            if (wallJumpHandler.canWallJump)
+            {
+                Debug.Log("WallJump!");
+                wallJumpHandler.StartWallJumping();
+                velocity = wallJumpHandler.JumpPower;
+                if (currentDirection.x > 0f)
+                {
+                    velocity.x = -velocity.x;
+                }
+            }
+            else if (jumpHandler.TryJump())
+            {
 
-            velocity.y = jumpHandler.JumpPower;
-            timeSinceJumpStart = 0.0f;
+                velocity.y = jumpHandler.JumpPower;
+            }
         }
     }
 
     private void OnJumpReleased()
     {
-        jumpHandler.OnJumpingStop();
+        wallJumpHandler.OnJumpReleased();
+        jumpHandler.OnJumpReleased();
     }
 
     private void OnDash()

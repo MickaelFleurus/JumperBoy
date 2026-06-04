@@ -7,18 +7,17 @@ public class JumpHandler : ScriptableObject
     private bool isJumping = false;
 
     [SerializeField] private float jumpPower = 5.5f;
-    [SerializeField] private float jumpingMore = 4f;
     [SerializeField] private float maxJumpTime = 1f;
     [SerializeField] private int jumpAmount = 3;
-    [SerializeField] private float jumpCooldown = 0.5f;
+    [SerializeField] private float jumpCooldown = 1.5f;
 
 
+    private float jumpTimeLeft = 0f;
     private int jumpLeft = 0;
     private float cooldownLeft = 0f;
 
     public bool IsJumping => isJumping;
     public float JumpPower => jumpPower;
-    public float JumpingMore => jumpingMore;
     public float MaxJumpTime => maxJumpTime;
     private bool canJump = true;
 
@@ -53,7 +52,17 @@ public class JumpHandler : ScriptableObject
 
     public void Updated(float elapsed)
     {
-        if (cooldownLeft > 0f)
+
+        if (jumpTimeLeft > 0f)
+        {
+            jumpTimeLeft -= elapsed;
+            if (jumpTimeLeft <= 0f)
+            {
+                isJumping = false;
+                cooldownLeft = jumpCooldown;
+            }
+        }
+        else if (cooldownLeft > 0f)
         {
             cooldownLeft -= elapsed;
             if (cooldownLeft <= 0f)
@@ -69,12 +78,17 @@ public class JumpHandler : ScriptableObject
         {
             jumpLeft--;
             isJumping = true;
+            jumpTimeLeft = maxJumpTime;
             return true;
         }
         return false;
     }
+    public void OnJumpStop()
+    {
+        OnJumpReleased();
+    }
 
-    public void OnJumpingStop()
+    public void OnJumpReleased()
     {
         isJumping = false;
         cooldownLeft = jumpCooldown;

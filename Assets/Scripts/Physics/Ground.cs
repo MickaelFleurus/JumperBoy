@@ -20,8 +20,10 @@ public struct InteractionResult
 
 public class Ground : MonoBehaviour
 {
+    public enum EWallType { Slippy, Normal };
     public enum EGroundType { Solid, WalkThrough, Breakable };
     [SerializeField] EGroundType groundType = EGroundType.Solid;
+    [SerializeField] EWallType wallType = EWallType.Normal;
     [SerializeField] int strength = 1;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created

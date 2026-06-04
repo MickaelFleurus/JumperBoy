@@ -7,7 +7,7 @@ public class DashHandler : ScriptableObject
 {
     [SerializeField] private float dashPower = 15.5f;
     [SerializeField] private int dashAmount = 3;
-    [SerializeField] private float dashDuration = 0.5f;
+    [SerializeField] private float dashDuration = 0.40f;
     [SerializeField] private float dashCooldown = 1.5f;
     private int dashLeft = 0;
     private float cooldownLeft = 0f;
