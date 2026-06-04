@@ -113,11 +113,13 @@ public class Player : MonoBehaviour
         wallJumpHandler.canWallJump = false;
         if (!dashHandler.IsDashing && !wallJumpHandler.IsWallJumping)
         {
-            if (Mathf.Abs(currentDirection.x) > 0.1f)
+
+            if (Mathf.Abs(velocity.x) > 0.1f || Mathf.Abs(currentDirection.x) > 0.1f)
             {
                 float targetSpeed = currentDirection.x * (true ? runSpeed : walkSpeed);
 
-                bool hasCollision = currentDirection.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
+                float checkValue = Mathf.Abs(velocity.x) > 0.01f ? velocity.x : currentDirection.x;
+                bool hasCollision = checkValue > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
                 if (!hasCollision)
                 {
                     velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accelerationRate * Time.deltaTime);
@@ -125,7 +127,7 @@ public class Player : MonoBehaviour
                 else
                 {
                     velocity.x = 0; // Stop if hitting a wall
-                    wallJumpHandler.canWallJump = true;
+                    wallJumpHandler.canWallJump = !isGrounded;
                 }
             }
             else
@@ -143,20 +145,21 @@ public class Player : MonoBehaviour
             }
             else
             {
-                float targetSpeed = velocity.x * (true ? runSpeed : walkSpeed);
+                float targetSpeed = true ? runSpeed : walkSpeed;
+                targetSpeed *= Math.Sign(velocity.x);
                 velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, decelerationRate * Time.deltaTime);
             }
         }
         else if (dashHandler.IsDashing)
         {
-            bool hasCollision = currentDirection.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
+            bool hasCollision = velocity.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
             if (hasCollision)
             {
                 velocity.x = 0f;
             }
             else
             {
-                velocity.x = dashHandler.DashPower;
+                velocity.x = dashHandler.DashPower * Math.Sign(velocity.x);
             }
         }
     }
@@ -177,7 +180,6 @@ public class Player : MonoBehaviour
             ignoreNextWalkThroughCollision = false;
             if (wallJumpHandler.canWallJump)
             {
-                Debug.Log("WallJump!");
                 wallJumpHandler.StartWallJumping();
                 velocity = wallJumpHandler.JumpPower;
                 if (currentDirection.x > 0f)

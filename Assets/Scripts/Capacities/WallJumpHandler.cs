@@ -8,7 +8,7 @@ public class WallJumpHandler : ScriptableObject
     [SerializeField] private Vector2 jumpPower = new Vector2(3.5f, 5.5f);
 
     [SerializeField] private float jumpExtensionDuration = 0.2f;
-    [SerializeField] private float jumpMandatoryDuration = 1f;
+    [SerializeField] private float jumpMandatoryDuration = 0.5f;
 
     private float jumpTimeLeft = 0f;
 
