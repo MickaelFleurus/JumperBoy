@@ -16,9 +16,19 @@ public class JumpHandler : ScriptableObject
     private int jumpLeft = 0;
     private float cooldownLeft = 0f;
 
+    // ===== DEBUG PANEL ACCESSORS (Added for visualization) =====
     public bool IsJumping => isJumping;
     public float JumpPower => jumpPower;
     public float MaxJumpTime => maxJumpTime;
+    public int JumpAmount => jumpAmount;
+    public float JumpCooldown => jumpCooldown;
+
+    public void SetJumpPower(float value) => jumpPower = value;
+    public void SetMaxJumpTime(float value) => maxJumpTime = value;
+    public void SetJumpAmount(int value) => jumpAmount = value;
+    public void SetJumpCooldown(float value) => jumpCooldown = value;
+    // ===== END DEBUG PANEL ACCESSORS =====
+
     private bool canJump = true;
 
     public JumpHandler()

@@ -344,4 +344,170 @@ public class Player : MonoBehaviour
 
         return false;
     }
+
+    private bool showDebugPanel = true;
+    private bool showVelocitySection = true;
+    private bool showJumpHandlerSection = true;
+    private bool showDashHandlerSection = true;
+    private bool showWallJumpHandlerSection = true;
+    private Vector2 scrollPosition = Vector2.zero;
+
+    private bool DrawFoldableSection(ref bool isOpen, string title)
+    {
+        string arrow = isOpen ? "▼ " : "► ";
+        bool newState = GUILayout.Toggle(isOpen, arrow + title, GUI.skin.box);
+        return newState;
+    }
+
+    void OnGUI()
+    {
+        GUILayout.BeginArea(new Rect(10, 10, 300, 500));
+
+        showDebugPanel = GUILayout.Toggle(showDebugPanel, "▼ Player Debug Panel", GUI.skin.box);
+
+        if (showDebugPanel)
+        {
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandHeight(true));
+            GUILayout.Space(5);
+
+            // Velocity Section
+            showVelocitySection = DrawFoldableSection(ref showVelocitySection, "Velocity");
+            if (showVelocitySection)
+            {
+                GUILayout.Label($"Velocity X: {velocity.x:F2}", GUILayout.Height(25));
+                GUILayout.Label($"Velocity Y: {velocity.y:F2}", GUILayout.Height(25));
+                GUILayout.Label($"Magnitude: {velocity.magnitude:F2}", GUILayout.Height(25));
+                GUILayout.Label($"Direction: {velocity.normalized}", GUILayout.Height(25));
+                GUILayout.Label($"Grounded: {isGrounded}", GUILayout.Height(25));
+            }
+
+            GUILayout.Space(10);
+
+            // Jump Handler Section
+            showJumpHandlerSection = DrawFoldableSection(ref showJumpHandlerSection, "Jump Handler");
+            if (showJumpHandlerSection)
+            {
+                GUILayout.Label($"Is Jumping: {jumpHandler.IsJumping}", GUILayout.Height(25));
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Jump Power:", GUILayout.Width(120));
+                float jumpPower = GUILayout.HorizontalSlider(jumpHandler.JumpPower, 1f, 15f);
+                GUILayout.Label($"{jumpPower:F2}", GUILayout.Width(50));
+                if (jumpPower != jumpHandler.JumpPower)
+                    jumpHandler.SetJumpPower(jumpPower);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Max Jump Time:", GUILayout.Width(120));
+                float maxJumpTime = GUILayout.HorizontalSlider(jumpHandler.MaxJumpTime, 0.1f, 2f);
+                GUILayout.Label($"{maxJumpTime:F2}", GUILayout.Width(50));
+                if (maxJumpTime != jumpHandler.MaxJumpTime)
+                    jumpHandler.SetMaxJumpTime(maxJumpTime);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Jump Amount:", GUILayout.Width(120));
+                int jumpAmount = (int)GUILayout.HorizontalSlider(jumpHandler.JumpAmount, 1f, 10f);
+                GUILayout.Label($"{jumpAmount}", GUILayout.Width(50));
+                if (jumpAmount != jumpHandler.JumpAmount)
+                    jumpHandler.SetJumpAmount(jumpAmount);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Jump Cooldown:", GUILayout.Width(120));
+                float jumpCooldown = GUILayout.HorizontalSlider(jumpHandler.JumpCooldown, 0.1f, 3f);
+                GUILayout.Label($"{jumpCooldown:F2}", GUILayout.Width(50));
+                if (jumpCooldown != jumpHandler.JumpCooldown)
+                    jumpHandler.SetJumpCooldown(jumpCooldown);
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(10);
+
+            // Dash Handler Section
+            showDashHandlerSection = DrawFoldableSection(ref showDashHandlerSection, "Dash Handler");
+            if (showDashHandlerSection)
+            {
+                GUILayout.Label($"Is Dashing: {dashHandler.IsDashing}", GUILayout.Height(25));
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Dash Power:", GUILayout.Width(120));
+                float dashPower = GUILayout.HorizontalSlider(dashHandler.DashPower, 5f, 30f);
+                GUILayout.Label($"{dashPower:F2}", GUILayout.Width(50));
+                if (dashPower != dashHandler.DashPower)
+                    dashHandler.SetDashPower(dashPower);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Dash Amount:", GUILayout.Width(120));
+                int dashAmount = (int)GUILayout.HorizontalSlider(dashHandler.DashAmount, 1f, 10f);
+                GUILayout.Label($"{dashAmount}", GUILayout.Width(50));
+                if (dashAmount != dashHandler.DashAmount)
+                    dashHandler.SetDashAmount(dashAmount);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Dash Duration:", GUILayout.Width(120));
+                float dashDuration = GUILayout.HorizontalSlider(dashHandler.DashDuration, 0.1f, 1f);
+                GUILayout.Label($"{dashDuration:F2}", GUILayout.Width(50));
+                if (dashDuration != dashHandler.DashDuration)
+                    dashHandler.SetDashDuration(dashDuration);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Dash Cooldown:", GUILayout.Width(120));
+                float dashCooldown = GUILayout.HorizontalSlider(dashHandler.DashCooldown, 0.1f, 3f);
+                GUILayout.Label($"{dashCooldown:F2}", GUILayout.Width(50));
+                if (dashCooldown != dashHandler.DashCooldown)
+                    dashHandler.SetDashCooldown(dashCooldown);
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(10);
+
+            // Wall Jump Handler Section
+            showWallJumpHandlerSection = DrawFoldableSection(ref showWallJumpHandlerSection, "Wall Jump Handler");
+            if (showWallJumpHandlerSection)
+            {
+                GUILayout.Label($"Is Wall Jumping: {wallJumpHandler.IsWallJumping}", GUILayout.Height(25));
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Jump Power X:", GUILayout.Width(120));
+                Vector2 jumpPowerWall = wallJumpHandler.JumpPower;
+                float jumpPowerX = GUILayout.HorizontalSlider(jumpPowerWall.x, 0f, 10f);
+                GUILayout.Label($"{jumpPowerX:F2}", GUILayout.Width(50));
+                if (jumpPowerX != jumpPowerWall.x)
+                    wallJumpHandler.SetJumpPower(new Vector2(jumpPowerX, jumpPowerWall.y));
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Jump Power Y:", GUILayout.Width(120));
+                float jumpPowerY = GUILayout.HorizontalSlider(jumpPowerWall.y, 0f, 15f);
+                GUILayout.Label($"{jumpPowerY:F2}", GUILayout.Width(50));
+                if (jumpPowerY != jumpPowerWall.y)
+                    wallJumpHandler.SetJumpPower(new Vector2(jumpPowerWall.x, jumpPowerY));
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Extension Duration:", GUILayout.Width(120));
+                float extDuration = GUILayout.HorizontalSlider(wallJumpHandler.JumpExtensionDuration, 0.1f, 1f);
+                GUILayout.Label($"{extDuration:F2}", GUILayout.Width(50));
+                if (extDuration != wallJumpHandler.JumpExtensionDuration)
+                    wallJumpHandler.SetJumpExtensionDuration(extDuration);
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Mandatory Duration:", GUILayout.Width(120));
+                float mandDuration = GUILayout.HorizontalSlider(wallJumpHandler.JumpMandatoryDuration, 0.1f, 2f);
+                GUILayout.Label($"{mandDuration:F2}", GUILayout.Width(50));
+                if (mandDuration != wallJumpHandler.JumpMandatoryDuration)
+                    wallJumpHandler.SetJumpMandatoryDuration(mandDuration);
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.EndScrollView();
+        }
+
+        GUILayout.EndArea();
+    }
 }

@@ -16,8 +16,16 @@ public class WallJumpHandler : ScriptableObject
     private bool isWallJumping = false;
     private bool isExtending = false;
 
+    // ===== DEBUG PANEL ACCESSORS (Added for visualization) =====
     public bool IsWallJumping => isWallJumping;
     public Vector2 JumpPower => jumpPower;
+    public float JumpExtensionDuration => jumpExtensionDuration;
+    public float JumpMandatoryDuration => jumpMandatoryDuration;
+
+    public void SetJumpPower(Vector2 value) => jumpPower = value;
+    public void SetJumpExtensionDuration(float value) => jumpExtensionDuration = value;
+    public void SetJumpMandatoryDuration(float value) => jumpMandatoryDuration = value;
+    // ===== END DEBUG PANEL ACCESSORS ====
 
     void OnEnable()
     {

@@ -15,8 +15,19 @@ public class DashHandler : ScriptableObject
     private bool isDashing = false;
 
 
+    // ===== DEBUG PANEL ACCESSORS (Added for visualization) =====
     public bool IsDashing => isDashing;
     public float DashPower => dashPower;
+    public int DashAmount => dashAmount;
+    public float DashDuration => dashDuration;
+    public float DashCooldown => dashCooldown;
+
+    public void SetDashPower(float value) => dashPower = value;
+    public void SetDashAmount(int value) => dashAmount = value;
+    public void SetDashDuration(float value) => dashDuration = value;
+    public void SetDashCooldown(float value) => dashCooldown = value;
+    // ===== END DEBUG PANEL ACCESSORS =====
+
     private bool canDash = true;
 
     public DashHandler()
