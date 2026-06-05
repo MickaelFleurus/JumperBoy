@@ -22,9 +22,9 @@ public class WallJumpHandler : ScriptableObject
     public float JumpExtensionDuration => jumpExtensionDuration;
     public float JumpMandatoryDuration => jumpMandatoryDuration;
 
-    public void SetJumpPower(Vector2 value) => jumpPower = value;
-    public void SetJumpExtensionDuration(float value) => jumpExtensionDuration = value;
-    public void SetJumpMandatoryDuration(float value) => jumpMandatoryDuration = value;
+    public void SetJumpPower(Vector2 value) { jumpPower = value; Save(); }
+    public void SetJumpExtensionDuration(float value) { jumpExtensionDuration = value; Save(); }
+    public void SetJumpMandatoryDuration(float value) { jumpMandatoryDuration = value; Save(); }
     // ===== END DEBUG PANEL ACCESSORS ====
 
     void OnEnable()
@@ -69,6 +69,19 @@ public class WallJumpHandler : ScriptableObject
             string json = File.ReadAllText(loadPath);
             JsonUtility.FromJsonOverwrite(json, this);
         }
+    }
+    public void Save()
+    {
+        string json = JsonUtility.ToJson(this, true);
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // WebGL: use PlayerPrefs (LocalStorage) - File I/O can cause "Permissions check failed" in iframes
+        PlayerPrefs.SetString(WebGLPrefsKey, json);
+        PlayerPrefs.Save();
+#else
+        // Standalone/Editor: save to JSON file
+        string savePath = Path.Combine(Application.persistentDataPath, "WallJumpSettings.json");
+        File.WriteAllText(savePath, json);
+#endif
     }
 
     public void StartWallJumping()

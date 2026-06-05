@@ -22,10 +22,10 @@ public class DashHandler : ScriptableObject
     public float DashDuration => dashDuration;
     public float DashCooldown => dashCooldown;
 
-    public void SetDashPower(float value) => dashPower = value;
-    public void SetDashAmount(int value) => dashAmount = value;
-    public void SetDashDuration(float value) => dashDuration = value;
-    public void SetDashCooldown(float value) => dashCooldown = value;
+    public void SetDashPower(float value) { dashPower = value; Save(); }
+    public void SetDashAmount(int value) { dashAmount = value; Save(); }
+    public void SetDashDuration(float value) { dashDuration = value; Save(); }
+    public void SetDashCooldown(float value) { dashCooldown = value; Save(); }
     // ===== END DEBUG PANEL ACCESSORS =====
 
     private bool canDash = true;
@@ -51,12 +51,27 @@ public class DashHandler : ScriptableObject
         }
 
         // Fallback to persistent data path
-        string loadPath = Path.Combine(Application.persistentDataPath, "JumpSettings.json");
+        string loadPath = Path.Combine(Application.persistentDataPath, "DashHandler.json");
         if (File.Exists(loadPath))
         {
             string json = File.ReadAllText(loadPath);
             JsonUtility.FromJsonOverwrite(json, this);
         }
+    }
+
+    public void Save()
+    {
+        string json = JsonUtility.ToJson(this, true);
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // WebGL: use PlayerPrefs (LocalStorage) - File I/O can cause "Permissions check failed" in iframes
+        PlayerPrefs.SetString(WebGLPrefsKey, json);
+        PlayerPrefs.Save();
+#else
+        // Standalone/Editor: save to JSON file
+        string savePath = Path.Combine(Application.persistentDataPath, "DashHandler.json");
+        File.WriteAllText(savePath, json);
+#endif
     }
 
     public void Updated(float elapsed)
