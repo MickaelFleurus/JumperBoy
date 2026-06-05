@@ -1,32 +1,27 @@
 using UnityEngine;
 
-public struct InteractionInitiator
-{
-    public enum EInteractionAngle { FromBeneath, FromAbove, Sideway };
-    public bool ignoreWalkThroughCollision;
-    public EInteractionAngle angle;
-    public int hitStrenght;
-    public GameObject go;
-    public string tag;
-    public int layer;
-}
-public struct InteractionResult
-{
-    public bool stopMovement;
-    public float yPosition;
-    public Ground.EGroundType groundType;
-
-}
-
-public class Ground : MonoBehaviour
+public class Environment : MonoBehaviour, IInteractible
 {
     public enum EWallType { Slippy, Normal };
     public enum EGroundType { Solid, WalkThrough, Breakable };
+
     [SerializeField] EGroundType groundType = EGroundType.Solid;
     [SerializeField] EWallType wallType = EWallType.Normal;
     [SerializeField] int strength = 1;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    private BoxCollider2D boxCollider;
+    private SpriteRenderer spriteRenderer;
+
+
+    void Awake()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+
+
+        boxCollider = gameObject.AddComponent<BoxCollider2D>();
+        boxCollider.size = spriteRenderer.size;
+    }
+
     void Start()
     {
 
