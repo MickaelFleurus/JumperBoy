@@ -15,6 +15,7 @@ class InGameActions
     public Action RunPressed;
     public Action RunRelease;
     public Action Pause;
+    public Action ToggleDebugUI;
 
     public void Enable()
     {
@@ -84,6 +85,12 @@ class InGameActions
     {
         if (!enabled) return;
         Dash?.Invoke();
+    }
+
+    public void OnToggleDebugUI()
+    {
+        if (!enabled) return;
+        ToggleDebugUI?.Invoke();
     }
 }
 
@@ -193,7 +200,8 @@ class PlayerInputs : MonoBehaviour
         defaultInputs.Player.Sprint.canceled += ctx => inGameActions.OnRunReleased();
         defaultInputs.Player.Move.performed += ctx => TriggerMoveAction();
         defaultInputs.Player.Move.canceled += ctx => TriggerMoveAction();
-        defaultInputs.Player.Dash.started += ctx => inGameActions.Dash();
+        defaultInputs.Player.Dash.started += ctx => inGameActions.OnDash();
+        defaultInputs.Player.DebugUI.started += ctx => inGameActions.OnToggleDebugUI();
 
         defaultInputs.UI.Submit.started += ctx => uiActions.OnApprove();
         defaultInputs.UI.Cancel.started += ctx => uiActions.OnCancel();

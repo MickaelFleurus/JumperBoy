@@ -1,0 +1,55 @@
+:root {
+}
+
+
+
+.alignedContainer {
+    flex-grow: 0;
+    align-self: flex-start;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    height: auto;
+}
+
+.panel {
+    left: 0;
+    justify-content: space-evenly;
+    align-self: flex-start;
+    width: 300px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.612);
+    border-top-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-left-color: rgb(103, 103, 103);
+    border-right-color: rgb(103, 103, 103);
+    border-top-color: rgb(103, 103, 103);
+    border-bottom-color: rgb(103, 103, 103);
+    color: rgb(255, 255, 255);
+}
+
+.unity-toggle__text {
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+.unity-vector2-field__input {
+    flex-direction: row;
+    -unity-text-align: middle-center;
+}
+
+.unity-composite-field {
+    -unity-text-align: upper-left;
+    left: 30px;
+}
+
+.unity-composite-field__field {
+    width: 50px;
+    font-size: 10px;
+}

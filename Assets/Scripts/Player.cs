@@ -2,6 +2,8 @@ using System;
 using NUnit.Framework;
 using UnityEngine;
 
+
+// BUG WHEN KEEPING THE JUMP BUTTON PRESSED WHILE WALL JUMPING
 public class Player : MonoBehaviour
 {
     enum PlayerState { Idle, Walk, Run, Hanging, Rising, Falling };
@@ -50,7 +52,7 @@ public class Player : MonoBehaviour
         PlayerInputs.Instance.inGameActions.JumpRelease += OnJumpReleased;
         PlayerInputs.Instance.inGameActions.Dash += OnDash;
 
-        // ===== DEBUG PANEL INITIALIZATION =====
+
 #if !UNITY_EDITOR || DEVELOPMENT_BUILD
         if (!Debug.isDebugBuild)
             return;
@@ -58,8 +60,6 @@ public class Player : MonoBehaviour
 
         GameObject debugPanelGO = new GameObject("PlayerDebugPanel");
         PlayerDebugPanel debugPanel = debugPanelGO.AddComponent<PlayerDebugPanel>();
-        debugPanel.Initialize(this);
-        // ===== END DEBUG PANEL INITIALIZATION =====
     }
 
     void Update()
@@ -199,7 +199,6 @@ public class Player : MonoBehaviour
             }
             else if (jumpHandler.TryJump())
             {
-
                 velocity.y = jumpHandler.JumpPower;
             }
         }

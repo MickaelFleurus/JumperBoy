@@ -1,0 +1,30 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/Debug/DebugStyle.uss?fileID=7433441132597879392&amp;guid=fe6a6e48750f144b58e0f23c997db568&amp;type=3#DebugStyle"/>
+    <ui:ScrollView name="RootLeft" class="panel">
+        <ui:Foldout text="Player" name="PlayerData" value="true">
+            <ui:Vector2Field label="Position" style="right: 0; left: auto; width: 80%;"/>
+            <ui:VisualElement name="PositionRoot" class="alignedContainer">
+                <ui:Label text="Position" name="PositionLabel" emoji-fallback-support="false" enable-rich-text="false" double-click-selects-word="false" triple-click-selects-line="false" display-tooltip-when-elided="false"/>
+                <ui:Label text="({x}, {y})" name="PositionValue" enable-rich-text="false" emoji-fallback-support="false" double-click-selects-word="false" triple-click-selects-line="false" display-tooltip-when-elided="false"/>
+            </ui:VisualElement>
+            <VectorArrowElement name="VectorArrowElement" color="rgb(255, 255, 255)" style="width: 50px; height: 50px; align-self: center;"/>
+            <ui:VisualElement name="VelocityRoot" class="alignedContainer">
+                <ui:Label text="Velocity:" name="VelocityLabel"/>
+                <ui:Label text="({x}, {y})" name="VelocityValue" enable-rich-text="false" emoji-fallback-support="false" double-click-selects-word="false" triple-click-selects-line="false" display-tooltip-when-elided="false"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="StateRoot" class="alignedContainer">
+                <ui:Label text="Current state:" name="StateLabel" enable-rich-text="false" emoji-fallback-support="false" double-click-selects-word="false" triple-click-selects-line="false" display-tooltip-when-elided="false"/>
+                <ui:Label text="state" name="StateValue" enable-rich-text="false" emoji-fallback-support="false" double-click-selects-word="false" triple-click-selects-line="false" display-tooltip-when-elided="false" parse-escape-sequences="false"/>
+            </ui:VisualElement>
+            <ui:Foldout text="Jump Settings" name="JumpParameter" value="true">
+                <ui:VisualElement name="JumpAmountRoot" class="alignedContainer">
+                    <ui:SliderInt label="Jump repeat:" value="1" high-value="5" low-value="1" fill="false" show-input-field="false" style="width: 100%; flex-shrink: 1;"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="JumpLeftRoot" class="alignedContainer">
+                    <ui:Label text="Current state:" name="JumpLeftLabel" enable-rich-text="false" emoji-fallback-support="false" double-click-selects-word="false" triple-click-selects-line="false" display-tooltip-when-elided="false"/>
+                    <ui:Label text="state" name="JumpLeftValue" enable-rich-text="false" emoji-fallback-support="false" double-click-selects-word="false" triple-click-selects-line="false" display-tooltip-when-elided="false" parse-escape-sequences="false"/>
+                </ui:VisualElement>
+            </ui:Foldout>
+        </ui:Foldout>
+    </ui:ScrollView>
+</ui:UXML>
