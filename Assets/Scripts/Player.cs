@@ -176,7 +176,8 @@ public class Player : MonoBehaviour
 
     private void OnMove(Vector2 direction)
     {
-        currentDirection = direction;
+        currentDirection.x = Math.Sign(direction.x);
+        currentDirection.y = Math.Sign(direction.y);
     }
 
     private void OnJumpPressed()
@@ -357,6 +358,7 @@ public class Player : MonoBehaviour
     }
 
     // ===== DEBUG PANEL ACCESSORS =====
+    public Vector2 GetCurrentPosition() => transform.position;
     public Vector2 GetVelocity() => velocity;
     public Vector2 GetCurrentDirection() => currentDirection;
     public bool IsGrounded() => isGrounded;

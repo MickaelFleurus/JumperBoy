@@ -1,8 +1,6 @@
 :root {
 }
 
-
-
 .alignedContainer {
     flex-grow: 0;
     align-self: flex-start;
@@ -45,11 +43,22 @@
 }
 
 .unity-composite-field {
-    -unity-text-align: upper-left;
-    left: 30px;
+    -unity-text-align: middle-left;
+    height: 25px;
 }
 
 .unity-composite-field__field {
-    width: 50px;
-    font-size: 10px;
+    width: auto;
+    font-size: 12px;
+    color: rgb(255, 255, 255);
+}
+
+
+
+.unity-integer-field .unity-base-field__input {
+    background-color: rgba(255, 255, 255, 0);
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
 }

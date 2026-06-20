@@ -22,6 +22,7 @@ public class JumpHandler : ScriptableObject
     public float MaxJumpTime => maxJumpTime;
     public int JumpAmount => jumpAmount;
     public float JumpCooldown => jumpCooldown;
+    public int JumpLeft => jumpLeft;
 
     public void SetJumpPower(float value) { jumpPower = value; Save(); }
     public void SetMaxJumpTime(float value) { maxJumpTime = value; Save(); }

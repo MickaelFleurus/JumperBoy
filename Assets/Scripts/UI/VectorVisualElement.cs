@@ -4,7 +4,6 @@ using UnityEngine.UIElements;
 [UxmlElement]
 public partial class VectorArrowElement : VisualElement
 {
-
     [UxmlAttribute] public Color Color { get; set; } = Color.white;
     public Vector2 Vector
     {
@@ -33,18 +32,12 @@ public partial class VectorArrowElement : VisualElement
         }
     }
 
-    public float HeadLength { get; set; } = 10f;
-
-    public float HeadWidth { get; set; } = 5f;
-
     public float DotRadius { get; set; } = 4f;
-
-    public float Padding { get; set; } = 4f;
 
     public float LineWidth { get; set; } = 2f;
 
     private Vector2 vector;
-    private float maxVectorMagnitude = 1f;
+    private float maxVectorMagnitude = 6f;
 
     public VectorArrowElement()
     {
@@ -69,7 +62,7 @@ public partial class VectorArrowElement : VisualElement
         if (vector.sqrMagnitude < Mathf.Epsilon)
             return;
 
-        Vector2 direction = vector.normalized;
+        Vector2 direction = new Vector2(vector.x, -vector.y).normalized;
 
         float magnitude = vector.magnitude;
 
@@ -77,9 +70,7 @@ public partial class VectorArrowElement : VisualElement
             Mathf.Clamp01(magnitude / maxVectorMagnitude);
 
         float maxArrowLength =
-            Mathf.Min(contentRect.width, contentRect.height) * 0.5f
-            - Padding
-            - HeadLength;
+            Mathf.Min(contentRect.width, contentRect.height) * 0.5f;
 
         if (maxArrowLength <= 0f)
             return;
@@ -95,22 +86,6 @@ public partial class VectorArrowElement : VisualElement
         painter.BeginPath();
         painter.MoveTo(center);
         painter.LineTo(tip);
-        painter.Stroke();
-
-
-        Vector2 perpendicular = new Vector2(-direction.y, direction.x);
-
-        Vector2 headBase = tip - direction * HeadLength;
-
-        Vector2 left = headBase + perpendicular * HeadWidth;
-        Vector2 right = headBase - perpendicular * HeadWidth;
-
-        painter.BeginPath();
-        painter.MoveTo(tip);
-        painter.LineTo(left);
-
-        painter.MoveTo(tip);
-        painter.LineTo(right);
         painter.Stroke();
     }
 }

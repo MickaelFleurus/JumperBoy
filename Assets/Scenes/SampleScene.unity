@@ -310,6 +310,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerDebugPanel
   uiDocument: {fileID: 446004799}
+  player: {fileID: 2028799817}
+  ignoreKeyboardInput: 1
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
