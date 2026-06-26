@@ -22,17 +22,6 @@ public class Environment : MonoBehaviour, IInteractible
         boxCollider.size = spriteRenderer.size;
     }
 
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
     public void OnHit(int strength)
     {
         this.strength -= strength;
@@ -72,5 +61,10 @@ public class Environment : MonoBehaviour, IInteractible
             }
         }
         return result;
+    }
+
+    public Vector3 GetPosition()
+    {
+        throw new System.NotImplementedException();
     }
 }

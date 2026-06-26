@@ -14,10 +14,10 @@ public struct InteractionResult
     public bool stopMovement;
     public float yPosition;
     public Environment.EGroundType groundType;
-
+    public bool kill;
 }
+
 public interface IInteractible
 {
-    public InteractionResult OnInteraction(InteractionInitiator other);
-    public void OnHit(int strength);
+    public Vector3 GetPosition();
 }

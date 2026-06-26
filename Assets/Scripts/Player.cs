@@ -4,25 +4,19 @@ using UnityEngine;
 
 
 // BUG WHEN KEEPING THE JUMP BUTTON PRESSED WHILE WALL JUMPING
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IDynamicInteractible
 {
     enum PlayerState { Idle, Walk, Run, Hanging, Rising, Falling };
 
     [SerializeField] private float walkSpeed = 5f;
     [SerializeField] private float runSpeed = 8f;
-    [SerializeField] private float accelerationRate = 50f;
-    [SerializeField] private float decelerationRate = 30f;
 
 
     private Rigidbody2D rb;
     private Collider2D playerCollider;
     private Vector2 velocity = Vector2.zero;
-    private float gravityScale = 9.8f;
     private Vector2 currentDirection = new Vector2(0f, 0f);
     private bool isGrounded = false;
-    private LayerMask groundLayer;
-    private float groundCheckDistance = 0.2f;
-    private float lateralCheckDistance = 0.25f;
 
     private JumpHandler jumpHandler;
     private DashHandler dashHandler;
@@ -30,7 +24,10 @@ public class Player : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private bool ignoreNextWalkThroughCollision = false;
 
-    private RaycastHit2D[] hitResults = new RaycastHit2D[3];
+    void Awake()
+    {
+        ContactHandler.Instance.AddDynamicObject(this);
+    }
 
     void Start()
     {
@@ -40,7 +37,6 @@ public class Player : MonoBehaviour
         dashHandler = ScriptableObject.CreateInstance<DashHandler>();
         wallJumpHandler = ScriptableObject.CreateInstance<WallJumpHandler>();
 
-        groundLayer = LayerMask.GetMask("Ground");
         rb = GetComponent<Rigidbody2D>();
         playerCollider = GetComponent<Collider2D>();
         rb.bodyType = RigidbodyType2D.Kinematic;
@@ -62,116 +58,16 @@ public class Player : MonoBehaviour
         PlayerDebugPanel debugPanel = debugPanelGO.AddComponent<PlayerDebugPanel>();
     }
 
+    void FixedUpdate()
+    {
+        rb.linearVelocity = velocity;
+    }
+
     void Update()
     {
         jumpHandler.Updated(Time.deltaTime);
         wallJumpHandler.Updated(Time.deltaTime);
         dashHandler.Updated(Time.deltaTime);
-    }
-
-    void FixedUpdate()
-    {
-        UpdateHorizontalVelocity();
-        UpdateVerticalVelocity();
-        rb.linearVelocity = velocity;
-    }
-
-    private void UpdateVerticalVelocity()
-    {
-        if (!dashHandler.IsDashing)
-        {
-            if (velocity.y <= 0f)
-            {
-                bool isNowGrounded = HandleGroundCollision();
-
-                if (!isGrounded && isNowGrounded)
-                {
-                    velocity.y = 0.0f;
-                    ignoreNextWalkThroughCollision = false;
-                    jumpHandler.OnJumpReset();
-                    dashHandler.OnDashReset();
-                }
-                else if (!isNowGrounded)
-                {
-                    velocity.y -= Math.Max(gravityScale * Time.deltaTime, -10f);
-                }
-                isGrounded = isNowGrounded;
-            }
-            else  // velocity.y > 0f
-            {
-                isGrounded = false;
-                if (CheckVecticalCollision()) // Stop ascending
-                {
-                    jumpHandler.OnJumpStop();
-                    wallJumpHandler.OnJumpStop();
-                    velocity.y = 0f;
-                }
-                else
-                {
-                    float jumpingAttenuation = jumpHandler.IsJumping
-                        ? jumpHandler.JumpPower
-                        : wallJumpHandler.IsWallJumping
-                            ? wallJumpHandler.JumpPower.y
-                            : 0f;
-                    velocity.y -= Math.Max((gravityScale - jumpingAttenuation) * Time.deltaTime, -10f);
-                }
-            }
-        }
-    }
-
-    private void UpdateHorizontalVelocity()
-    {
-        wallJumpHandler.canWallJump = false;
-        if (!dashHandler.IsDashing && !wallJumpHandler.IsWallJumping)
-        {
-            if (Mathf.Abs(velocity.x) > 0.1f || Mathf.Abs(currentDirection.x) > 0.1f)
-            {
-                float targetSpeed = currentDirection.x * (true ? runSpeed : walkSpeed);
-
-                float checkValue = Mathf.Abs(velocity.x) > 0.01f ? velocity.x : currentDirection.x;
-                bool hasCollision = checkValue > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
-                if (!hasCollision)
-                {
-                    velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accelerationRate * Time.deltaTime);
-                }
-                else
-                {
-                    velocity.x = 0;
-                    wallJumpHandler.canWallJump = !isGrounded;
-                }
-            }
-            else
-            {
-                velocity.x = Mathf.MoveTowards(velocity.x, 0, decelerationRate * Time.deltaTime);
-            }
-        }
-        else if (wallJumpHandler.IsWallJumping)
-        {
-            bool hasCollision = velocity.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
-            if (hasCollision)
-            {
-                velocity.x = 0f;
-                wallJumpHandler.OnJumpStop();
-            }
-            else
-            {
-                float targetSpeed = true ? runSpeed : walkSpeed;
-                targetSpeed *= Math.Sign(velocity.x);
-                velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, decelerationRate * Time.deltaTime);
-            }
-        }
-        else if (dashHandler.IsDashing)
-        {
-            bool hasCollision = velocity.x > 0f ? CheckLateralCollision(Vector2.right) : CheckLateralCollision(Vector2.left);
-            if (hasCollision)
-            {
-                velocity.x = 0f;
-            }
-            else
-            {
-                velocity.x = dashHandler.DashPower * Math.Sign(velocity.x);
-            }
-        }
     }
 
     private void OnMove(Vector2 direction)
@@ -221,155 +117,33 @@ public class Player : MonoBehaviour
         }
     }
 
-    private bool CheckLateralCollision(Vector2 direction)
+    public InteractionResult OnInteraction(InteractionInitiator other)
     {
-        float xOrigin = direction.x > 0 ? playerCollider.bounds.max.x : playerCollider.bounds.min.x;
-        Span<Vector2> origins = stackalloc Vector2[3]{new Vector2(
-            xOrigin,
-            playerCollider.bounds.min.y + 0.1f
-        ), new Vector2(
-            xOrigin,
-            playerCollider.bounds.center.y
-        ), new Vector2(
-            xOrigin,
-            playerCollider.bounds.max.y - 0.1f
-        )};
-
-        var interaction = new InteractionInitiator();
-        interaction.angle = InteractionInitiator.EInteractionAngle.Sideway;
-        interaction.go = this.gameObject;
-        interaction.hitStrenght = 1;
-
-        foreach (var origin in origins)
-        {
-            int hits = Physics2D.RaycastNonAlloc(
-                        origin,
-                        direction, hitResults,
-                        lateralCheckDistance,
-                        groundLayer
-                    );
-
-            for (int i = 0; i < hits; ++i)
-            {
-                if (hitResults[i].distance < 0f) continue;
-                var ground = hitResults[i].transform.gameObject.GetComponent<IInteractible>();
-                var result = ground.OnInteraction(interaction);
-                if (result.stopMovement)
-                {
-                    float skinSize = direction.x > 0 ? -spriteRenderer.bounds.extents.x : spriteRenderer.bounds.extents.x;
-                    transform.position = new Vector3(
-                        hitResults[i].point.x + skinSize,
-                        transform.position.y,
-                        transform.position.z);
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        throw new NotImplementedException();
     }
 
-    private bool HandleGroundCollision()
+    public void OnHit(int strength)
     {
-        if (velocity.y > 0f)
-            return false;
-        float yOrigin = playerCollider.bounds.min.y;
-        Span<Vector2> origins = stackalloc Vector2[3]{new Vector2(
-            playerCollider.bounds.min.x, yOrigin
-        ), new Vector2(
-            playerCollider.bounds.center.x, yOrigin
-        ), new Vector2(
-            playerCollider.bounds.max.x , yOrigin
-        )};
-
-        var interaction = new InteractionInitiator();
-        interaction.angle = InteractionInitiator.EInteractionAngle.FromAbove;
-        interaction.go = this.gameObject;
-        interaction.hitStrenght = 1;
-        interaction.ignoreWalkThroughCollision = ignoreNextWalkThroughCollision;
-
-
-        foreach (var origin in origins)
-        {
-            int hits = Physics2D.RaycastNonAlloc(
-                    origin,
-                    Vector2.down, hitResults,
-                    groundCheckDistance,
-                    groundLayer);
-
-
-            for (int i = 0; i < hits; ++i)
-            {
-                if (hitResults[i].distance < 0f) continue;
-                var ground = hitResults[i].transform.gameObject.GetComponent<IInteractible>();
-                var result = ground.OnInteraction(interaction);
-                if (result.stopMovement)
-                {
-                    transform.position = new Vector3(
-                        transform.position.x,
-                        hitResults[i].point.y + spriteRenderer.bounds.extents.y,
-                        transform.position.z);
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        throw new NotImplementedException();
     }
 
-    private bool CheckVecticalCollision()
-    {
-        float yOrigin = playerCollider.bounds.max.y;
-        Span<Vector2> origins = stackalloc Vector2[3]{new Vector2(
-            playerCollider.bounds.min.x, yOrigin
-        ), new Vector2(
-            playerCollider.bounds.center.x, yOrigin
-        ), new Vector2(
-            playerCollider.bounds.max.x , yOrigin
-        )};
-
-        var interaction = new InteractionInitiator();
-        interaction.angle = InteractionInitiator.EInteractionAngle.FromBeneath;
-        interaction.go = this.gameObject;
-        interaction.hitStrenght = 1;
-
-        foreach (var origin in origins)
-        {
-            int hits = Physics2D.RaycastNonAlloc(
-                    origin,
-                    Vector2.down, hitResults,
-                    groundCheckDistance,
-                    groundLayer);
-
-
-            for (int i = 0; i < hits; ++i)
-            {
-                if (hitResults[i].distance < 0f) continue;
-                var ground = hitResults[i].transform.gameObject.GetComponent<IInteractible>();
-                var result = ground.OnInteraction(interaction);
-                if (result.stopMovement)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    // ===== DEBUG PANEL ACCESSORS =====
-    public Vector2 GetCurrentPosition() => transform.position;
+    public Vector3 GetPosition() => transform.position;
     public Vector2 GetVelocity() => velocity;
+    public float GetSpeed() => runSpeed;
     public Vector2 GetCurrentDirection() => currentDirection;
     public bool IsGrounded() => isGrounded;
-    public bool CanWallJump() => wallJumpHandler.canWallJump;
-    public float GetWalkSpeed() => walkSpeed;
-    public float GetRunSpeed() => runSpeed;
-    public float GetAccelerationRate() => accelerationRate;
-    public float GetDecelerationRate() => decelerationRate;
-    public float GetGravityScale() => gravityScale;
     public JumpHandler GetJumpHandler() => jumpHandler;
     public DashHandler GetDashHandler() => dashHandler;
     public WallJumpHandler GetWallJumpHandler() => wallJumpHandler;
-    // ===== END DEBUG PANEL ACCESSORS =====
+
+    public Collider2D GetCollider() => playerCollider;
+    public bool GetIgnoreNextWalkThroughCollision() => ignoreNextWalkThroughCollision;
+
+    public void SetIgnoreNextWalkThroughCollision(bool value) => ignoreNextWalkThroughCollision = value;
+
+    public void SetIsGrounded(bool value) => isGrounded = value;
+    public void SetPosition(Vector3 position) => transform.position = position;
+    public void SetVelocity(Vector2 value) { velocity = value; rb.linearVelocity = velocity; }
+
+
 }
