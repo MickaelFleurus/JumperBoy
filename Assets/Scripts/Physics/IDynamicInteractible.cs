@@ -3,7 +3,7 @@ using UnityEngine;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 
-public interface IDynamicInteractible : IInteractible
+public interface IDynamicInteractible
 {
     public bool IsGrounded();
 
